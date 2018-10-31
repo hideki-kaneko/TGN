@@ -1,3 +1,14 @@
+*.pth
+*.model
+*.pkl
+*.ipynb
+*.lst
+*history.csv
+
+labels/
+savedmodels/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
