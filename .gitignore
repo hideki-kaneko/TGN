@@ -3,7 +3,8 @@
 *.pkl
 *.ipynb
 *.lst
-*history.csv
+*history*.csv
+*.sh
 
 labels/
 savedmodels/

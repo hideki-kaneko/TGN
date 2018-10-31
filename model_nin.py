@@ -17,9 +17,9 @@ class MLPConv(nn.Module):
         x = F.relu(self.conv3(x))
         return x
 
-class NIN(nn.Module):
+class MyModel(nn.Module):
     def __init__(self):
-        super(NIN, self).__init__()
+        super(MyModel, self).__init__()
         self.mlpc1 = MLPConv(3, 192, 192, 192)
         self.drop1 = nn.Dropout2d(0.5)
         self.pool1 = nn.MaxPool2d(3, stride=2, ceil_mode=True)
@@ -40,6 +40,8 @@ class NIN(nn.Module):
         x = F.softmax(x, dim=1)
         return x
 
-class TGN(nn.Module):
-    def __init(self):
-        super.conv1 = 
+    def loss(self, y, t):
+        crossentropy = nn.CrossEntropyLoss()
+        total_loss = crossentropy(y, t) 
+        return total_loss
+

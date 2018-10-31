@@ -7,7 +7,7 @@ from torchvision import transforms
 import torch
 import pickle
 
-class NINDataset(Dataset):
+class MyDataset(Dataset):
     '''
         Args:
         csv_path (string): Specify the location of csv file including pairs of relative paths.
