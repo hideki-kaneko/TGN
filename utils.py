@@ -57,7 +57,6 @@ def test(model, device, test_loader):
             batch_loss += model.loss(out, y).item()
             _, pred = torch.max(out.data, 1)
             correct += (y == pred).sum().item()
-            break
 
     loss = batch_loss/len(test_loader)
     accuracy = correct / len(test_loader.dataset)
@@ -100,7 +99,6 @@ def train(model, device, train_loader, test_loader, optimizer, n_epochs,
             print(train_total_loss)
             loss.backward()
             optimizer.step()
-            break
         if scheduler is not None:
             scheduler.step()
             
