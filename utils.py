@@ -64,7 +64,7 @@ def test(model, device, test_loader):
 
 
 def train(model, device, train_loader, test_loader, optimizer, n_epochs,
-                scheduler=None, done_epoch=0, prefix="", path_checkpoint="./checkpoint"):
+                scheduler=None, done_epoch=0, prefix="", path_checkpoint="./checkpoint", writer=None):
     '''
         Method for training process.
         Args:
@@ -96,7 +96,6 @@ def train(model, device, train_loader, test_loader, optimizer, n_epochs,
             out = model(x)
             loss = model.loss(out, y)
             train_total_loss += loss.item()
-            print(train_total_loss)
             loss.backward()
             optimizer.step()
         if scheduler is not None:
@@ -105,12 +104,19 @@ def train(model, device, train_loader, test_loader, optimizer, n_epochs,
         train_loss = train_total_loss / len(train_loader) 
         test_loss, accuracy = test(model, device, test_loader)
         logger.log([train_loss, test_loss, accuracy])
+        if writer:
+            writer.add_scalar('data/loss_train', train_loss, epoch)
+            writer.add_scalar('data/loss_test', test_loss, epoch)
+            writer.add_scalar('data/acc_test', accuracy, epoch)
         print("train:{}".format(train_loss))
         print("test:{}".format(test_loss))
         print("accuracy:{}\n---------".format(accuracy))
         save_model(model, "model.pth")
         save_model(optimizer, "opt.pth")
         if epoch % 10 == 0:
+            if writer:
+                for name, param in model.named_parameters():
+                    writer.add_histogram(name, param.clone().cpu().data.numpy(), epoch)
             model_name = "model-{0}-ep{1}.pth".format(prefix, epoch)
             opt_name = "opt-{0}-ep{1}.pth".format(prefix, epoch)
 

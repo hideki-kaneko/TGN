@@ -18,6 +18,11 @@ from utils import train, test, TrainLogger
 SEED = 1
 
 def main(args):
+    writer = None
+    if args.tensorboard:
+        from tensorboardX import SummaryWriter
+        writer = SummaryWriter()
+
     done_epoch = 0
 
     if args.model_type == "nin":
@@ -94,6 +99,7 @@ if __name__ == "__main__":
     parser.add_argument("--resume", action="store_true", help="resume the training")
     parser.add_argument("--no-cuda", action="store_true", help="disable GPU")
     parser.add_argument("--num_workers", type=int, default=1, help="number of threads for dataloader")
+    parser.add_argument("--tensorboard", action="store_true")
 
     args = parser.parse_args()
 
