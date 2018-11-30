@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.optim as opt
 from torch.utils.data import DataLoader
 from torch.optim.lr_scheduler import LambdaLR
+from torchvision import models
 import numpy as np
 import argparse
 
@@ -28,6 +29,18 @@ def main(args):
     if args.model_type == "nin":
         from model_nin import MyModel
         model = MyModel()
+    elif args.model_type == "tgn":
+        from model_tgn import MyModel
+        model = MyModel()
+    elif args.model_type == "vgg":
+        def loss(y, t):
+            crossentropy = nn.CrossEntropyLoss()
+            total_loss = crossentropy(y, t) 
+            return total_loss
+        model = models.vgg16(pretrained=True)
+        model.classifier[0] = nn.Linear(8*8*512, 4096)
+        model.classifier[6] = nn.Linear(4096, 29)
+        model.loss = loss 
 
     if args.resume and os.path.exists(args.model_path):
         print("Resume training...")
@@ -76,7 +89,7 @@ def main(args):
     #scheduler = LambdaLR(sgd, lr_lambda=sc_lambda)
 
     train(model=model, device=device, train_loader=train_loader, test_loader=test_loader,
-                                  optimizer=optimizer, n_epochs=args.n_epochs, prefix=args.expname, done_epoch=done_epoch, path_checkpoint="checkpoint-{}".format(args.expname))
+                                  optimizer=optimizer, n_epochs=args.n_epochs, prefix=args.expname, done_epoch=done_epoch, path_checkpoint="checkpoint-{}".format(args.expname), writer=writer)
 
 if __name__ == "__main__":
 
@@ -88,7 +101,7 @@ if __name__ == "__main__":
     parser.add_argument("--test_dir", required=True, help="location of test files directory")
     parser.add_argument("--pickle_path", required=True, help="location of pickle file")
 
-    parser.add_argument("--model_type", choices=['nin', 'tgn'], default="nin", help="model type")
+    parser.add_argument("--model_type", choices=['nin', 'tgn', 'vgg'], default="nin", help="model type")
     parser.add_argument("--lr", type=float, default=0.0001, help="learning rate")
     parser.add_argument("--momentum", type=float, default=0.9, help="momentum factor")
     parser.add_argument("--batch_size", type=int, default=50, help="batch size")
