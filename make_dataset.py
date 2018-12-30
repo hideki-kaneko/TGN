@@ -1,11 +1,37 @@
-import os
-from PIL import Image
-import numpy as np
-from skimage.filters import threshold_otsu
-import pandas as pd
-from tqdm import tqdm
-import csv
 import argparse
+import csv
+import os
+import random
+
+import cv2
+import numpy as np
+import pandas as pd
+from PIL import Image
+from skimage.filters import threshold_otsu
+from tqdm import tqdm
+
+
+def shift(x,delta):
+    return min(max(x+delta,0),255)
+
+def change_hsv(img):
+    vshift = np.vectorize(shift)
+    CHANGE_HUE = True
+    CHANGE_SAT = True
+    CHANGE_BRT = True
+
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+    delta = random.gauss(0,20)
+    if CHANGE_HUE:
+        img[:,:,0] = vshift(img[:,:,0], delta)
+    delta = random.gauss(0,20)
+    if CHANGE_SAT:
+        img[:,:,1] = vshift(img[:,:,1], delta)
+    delta = random.gauss(0,10)
+    if CHANGE_BRT:
+        img[:,:,2] = vshift(img[:,:,2], delta)
+    img = cv2.cvtColor(img, cv2.COLOR_HSV2RGB)
+    return img
 
 def crop_image(img, x, y, size):
     crop = img.crop((x, y, x+size, y+size))
@@ -32,14 +58,12 @@ def slice_image(img_path, dst_dir, size, stride=-1, angle_step = 30):
         while y <= height-size:
             while x <= width-size:
                 crop = img[y:y+size, x:x+size]
-                #h,s,v = Image.fromarray(crop).convert("HSV").split()
-                #hue = float(np.asarray(h).mean())
-#                 if bi[y:y+size, x:x+size].mean() < 1.0 or hue<55 or hue>65:
                 if bi[y:y+size, x:x+size].mean() < 1.0:
                     pass
                 else:
                     crop_img = Image.fromarray(crop)
-                    crop_img.save(dst_dir + "/" + name + "_x" + str(x) + "y" + str(y) + "r" + str(angle) + ".jpg")
+                    # crop_img = change_hsv(crop)
+                    cv2.imwrite(dst_dir + "/" + name + "_x" + str(x) + "y" + str(y) + "r" + str(angle) + ".jpg", crop_img)
                 x+=stride
             x=0
             y+=stride
@@ -68,6 +92,7 @@ def make_dataset(base_dir,out_dir, labels):
                     slice_image(src_img, out_dir_path, 256)
 
 def main():
+    random.seed(123)
     parser = argparse.ArgumentParser()
     parser.add_argument("labels_path")
     parser.add_argument("src_dir")

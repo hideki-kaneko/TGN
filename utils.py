@@ -1,12 +1,13 @@
-import numpy as np
-import os
 import csv
+import os
+
+import numpy as np
 import pandas as pd
-from tqdm import tqdm
-#import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 from PIL import Image
+from tqdm import tqdm
+
 
 class TrainLogger():
     '''

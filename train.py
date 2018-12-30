@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 import torch.optim as opt
 from torch.utils.data import DataLoader
-from torch.optim.lr_scheduler import LambdaLR
 from torchvision import models
 import numpy as np
 import argparse
@@ -19,6 +18,7 @@ from utils import train, test, TrainLogger
 SEED = 1
 
 def main(args):
+    canny = False
     writer = None
     if args.tensorboard:
         from tensorboardX import SummaryWriter
@@ -32,6 +32,7 @@ def main(args):
     elif args.model_type == "tgn":
         from model_tgn import MyModel
         model = MyModel()
+        canny = True
     elif args.model_type == "vgg":
         def loss(y, t):
             crossentropy = nn.CrossEntropyLoss()
@@ -39,7 +40,7 @@ def main(args):
             return total_loss
         model = models.vgg16(pretrained=True)
         model.classifier[0] = nn.Linear(8*8*512, 4096)
-        model.classifier[6] = nn.Linear(4096, 29)
+        model.classifier[6] = nn.Linear(4096, 27)
         model.loss = loss 
 
     if args.resume and os.path.exists(args.model_path):
@@ -61,32 +62,16 @@ def main(args):
     torch.cuda.manual_seed(SEED)
     np.random.seed(SEED) 
 
-    
-    #dataset_train = NINDataset("dict_class_neuron.pkl", "./train-file.lst", "./dataset")
-    #dataset_test = NINDataset("dict_class_neuron.pkl", "./test-file.lst", "./dataset")
-    #train_loader = DataLoader(dataset_train, batch_size=16, shuffle=True)
-    #test_loader = DataLoader(dataset_test, batch_size=16, shuffle=True)
-    #
-    #device = torch.device("cuda:0")
-    #model = model.to(device)
-    #sgd = opt.SGD(model.parameters(), lr=0.01)
-    #
-    #train(model=model, device=device, train_loader=train_loader, test_loader=test_loader,
-    #                              optimizer=sgd, n_epochs=10000)
-
-    dataset_train = MyDataset(pickle_path=args.pickle_path, csv_path=args.train_list_path, root_dir=args.train_dir)
-    dataset_test = MyDataset(pickle_path=args.pickle_path, csv_path=args.test_list_path, root_dir=args.test_dir)
+    dataset_train = MyDataset(pickle_path=args.pickle_path, csv_path=args.train_list_path, root_dir=args.train_dir, canny=canny)
+    dataset_test = MyDataset(pickle_path=args.pickle_path, csv_path=args.test_list_path, root_dir=args.test_dir, canny=canny)
     train_loader = DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
     test_loader = DataLoader(dataset_test, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers)
 
     device = torch.device("cpu" if args.no_cuda else "cuda:0")
     model = model.to(device)
-    # optimizer = opt.SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
     optimizer = opt.Adam(model.parameters(), lr=args.lr, betas=(0.5, 0.999))
     if args.resume:
         optimizer.load_state_dict(torch.load(args.optimizer_path))
-    #sc_lambda = lambda epoch: 0.1 if epoch <5000 else 0.01
-    #scheduler = LambdaLR(sgd, lr_lambda=sc_lambda)
 
     train(model=model, device=device, train_loader=train_loader, test_loader=test_loader,
                                   optimizer=optimizer, n_epochs=args.n_epochs, prefix=args.expname, done_epoch=done_epoch, path_checkpoint="checkpoint-{}".format(args.expname), writer=writer)

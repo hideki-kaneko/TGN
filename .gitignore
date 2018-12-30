@@ -1,10 +1,10 @@
 *.pth
 *.model
-*.pkl
-*.ipynb
-*.lst
+# *.pkl
+# *.ipynb
+# *.lst
 *history*.csv
-*.sh
+# *.sh
 
 labels/
 savedmodels/

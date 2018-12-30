@@ -1,12 +1,16 @@
+import csv
+from collections import OrderedDict
+
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.models as models
 from torch.utils import model_zoo
 from tqdm import tqdm
-from collections import OrderedDict
-import csv
+
+import torchvision.models as models
+
+
 '''
 VGG16
 '''
@@ -71,4 +75,3 @@ class MyModel(nn.Module):
         crossentropy = nn.CrossEntropyLoss()
         total_loss = crossentropy(y, t) 
         return total_loss
-
