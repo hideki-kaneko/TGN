@@ -1,3 +1,6 @@
+# make_dataset.py
+# Usage: python3 make_dataset.py --labels_path="./path_to_label.csv" --src_dir="./path_to_image_dir" --dst_dir="path_to_output_dir"
+
 import argparse
 import csv
 import os
@@ -38,8 +41,21 @@ def crop_image(img, x, y, size):
     return crop
 
 def slice_image(img_path, dst_dir, size, stride=-1, angle_step = 30):
+    # 入力された画像を正方形の小領域に分割して保存します。
+    # 入力画像に対して、(size, size)の正方形の領域をstrideずつxy方向にずらして切り出す操作を繰り返します。
+    # 切り出しが終わるごとにangle_step分だけ入力画像を回転させ、同様の操作を繰り返します。
+    # 正方形の領域のうち、入力画像を二値化して黒くなっている部分の占める割合が100%に満たないものは保存されません。
+    #
+    # img_path[str]     : 入力画像(jpg)の絶対パス
+    # dst_dir[str]      : 分割した画像を保存するディレクトリのパス
+    # size[int]         : 分割する正方形の1辺の長さ(px)
+    # stride[int]       : 正方形の領域をスライドさせる幅（-1を指定した場合、正方形の1辺の長さと等しくなります）
+    # angle_step[float] : 1回の切り出しで画像を回転させる角度
+
     if stride==-1:
         stride = size
+    
+    # 画像の読み込み
     img_org = Image.open(img_path)
     img_org = img_org.crop((0,0,img_org.size[0], img_org.size[1]*0.5))
     width, height = img_org.size
@@ -48,22 +64,24 @@ def slice_image(img_path, dst_dir, size, stride=-1, angle_step = 30):
     angle = 0
     name = os.path.basename(img_path)[:-4]
     
+    # 元画像の回転角を少しずつ変えながらループ
     while angle < 360:
-        img = img_org.convert('RGBA').rotate(angle)
-        white = Image.new('RGBA', img.size, (255,)*4)
-        img = Image.composite(img, white, img)
-        img = img.convert('RGB')
-        bi = convert_to_binary(img)
-        img = np.asarray(img)
+        img = img_org.convert('RGBA').rotate(angle)     # 画像を回転
+        white = Image.new('RGBA', img.size, (255,)*4)   # 回転させた画像を貼り付ける空白の領域を確保
+        img = Image.composite(img, white, img)          # 回転させた画像を空白の領域に貼り付け
+        img = img.convert('RGB')                        # 透過度を表現するアルファチャンネルは不要なので捨てる
+        bi = convert_to_binary(img)                     # 画像を二値化
+        img = np.asarray(img)                           # 各ピクセルの値を見たいのでnumpyの行列に変換
+        # 切り出す座標(x,y)を少しずつ変えながらループ
         while y <= height-size:
             while x <= width-size:
-                crop = img[y:y+size, x:x+size]
-                if bi[y:y+size, x:x+size].mean() < 1.0:
+                crop = img[y:y+size, x:x+size]              # 画像の座標(x,y)を原点とした1辺sizeの正方領域を切り出し
+                if bi[y:y+size, x:x+size].mean() < 1.0:     # 正方領域のうち黒い部分が占める割合が100%に満たない場合はスキップ
                     pass
                 else:
                     crop_img = Image.fromarray(crop)
                     # crop_img = change_hsv(crop)
-                    cv2.imwrite(dst_dir + "/" + name + "_x" + str(x) + "y" + str(y) + "r" + str(angle) + ".jpg", crop_img)
+                    cv2.imwrite(dst_dir + "/" + name + "_x" + str(x) + "y" + str(y) + "r" + str(angle) + ".jpg", crop_img)  # 適当な名前をつけて切り出した部分を保存
                 x+=stride
             x=0
             y+=stride
